@@ -17,17 +17,15 @@ for plant in network_wind.index:
     lat = np.round(network_eno.loc[network_eno.index == node, "Y/Lat [-] = 0"].values[0], 2)
     plant_to_coords[plant] = (lat, lon)
 
-years = [2014]
+years = [2015, 2024, 2025]
 
-data_directory = '/nrel/wtk/conus/'
+data_directory = '/nrel/wtk/hrrr_met_toolkit/v1.0.0/'
 
 plant_to_year = {p:{} for p in plant_to_coords.keys()}
 
 for year in years:
     print(f"Pulling data for {year}...")
-
-    wtk_file = os.path.join(data_directory, f"wtk_conus_{year}.h5")
-
+    wtk_file = os.path.join(data_directory, f"hrrr_nat_f02_conus_{year}.h5")
     with WindX(wtk_file, hsds=True) as f:
         time_index = f.time_index
         for plant, location in plant_to_coords.items():
