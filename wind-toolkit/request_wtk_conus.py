@@ -1,0 +1,41 @@
+
+from rex import WindX
+
+network_wind = pd.read_excel("/home/emco4286/data/network.xlsx", sheet_name="WIND")
+network_eno = pd.read_excel("/home/emco4286/data/network.xlsx", sheet_name="ENO")
+
+network_wind.set_index(network_pv["Name"], inplace=True)
+network_eno.set_index(network_eno["Name"], inplace=True)
+
+plant_to_coords = {}
+
+for plant in network_wind.index:
+    node = network_wind.loc[network_wind.index == plant, "NodeName"].values[0]
+    lon = np.round(network_eno.loc[network_eno.index == node, "X/Long [-] = 0"].values[0], 2)
+    lat = np.round(network_eno.loc[network_eno.index == node, "Y/Lat [-] = 0"].values[0], 2)
+    plant_to_coords[plant] = (lat, lon)
+
+years = [2014, 2015]
+
+data_directory = '/nrel/wtk/'
+
+plant_to_year = {p:{} for p in plant_to_coords.keys()}
+
+for year in years:
+    print(f"Pulling data for {year}...")
+
+    wtf_file = os.path.join(data_directory, f"wtk_conus_{year}.h5")
+
+    with WindX(wtk_file, hsds=True) as f:
+        time_index = f.time_index
+        for plant, location in plant_to_coords.items():
+            print(f"Pulling data for {plant}")
+            data = f.get_lat_lon_df('windspeed_100m', location)
+            data.set_index(time_index, inplace=True)
+            plant_to_year[plant][year] = data
+
+plant_to_data = {}
+for plant in plant_to_coords.keys():
+    data = pd.concat(plant_to_year_to_data[plant].values())
+    data.columns = ['windspeed_100m']
+    data.to_csv(f"/home/emco4286/data/wind/{years[0]}/{plant}.csv")

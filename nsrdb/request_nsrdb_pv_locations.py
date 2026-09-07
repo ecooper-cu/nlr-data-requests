@@ -18,7 +18,7 @@ for plant in network_pv.index:
     plant_to_coords[plant] = (lat, lon)
 
 data_dir = "/nrel/nsrdb/GOES/aggregated/v4.0.0/"
-years = [2014, 2015]
+years = [2024, 2025]
 attributes = ['air_temperature', 'dhi','dni','ghi']
 
 plant_to_year_to_data = {p:{year: {} for year in years} for p in plant_to_coords.keys()}
@@ -27,13 +27,14 @@ for year in years:
     print(f"Pulling data for {year}...")
     nsrdb_file = os.path.join(data_dir, f"nsrdb_{year}.h5")
     with NSRDBX(nsrdb_file, hsds=True) as f:
-        meta = f.meta
         time_index = f.time_index
         for plant, location in plant_to_coords.items():
             for attr in attributes:
                 print(f"Pulling {attr} data for {plant}...")
                 data = f.get_lat_lon_df(attr, location)
-                plant_to_year_to_data[plant][year][attr] = pd.Series(data=data, index=time_index, name=attr)
+                data.set_index(time_index, inplace=True)
+                print(data.head())
+                plant_to_year_to_data[plant][year][attr] = data
 
 plant_to_data = {}
 for plant in plant_to_coords.keys():
@@ -41,7 +42,9 @@ for plant in plant_to_coords.keys():
     for year in years:
         data = pd.concat(plant_to_year_to_data[plant][year].values(), axis=1)
         data.columns = attributes
+        data.set_index(plant_to_year_to_data[plant][year][attributes[0]].index, inplace=True)
+        print(data.head())
         data_list.append(data)
-    data = pd.concat(data_list)
+    data = pd.concat(data_list, axis=0)
     data.columns = attributes
-    data.to_csv(f"/home/emco4286/data/pv_nsrdb/{plant}.csv", index=False)
+    data.to_csv(f"/home/emco4286/data/pv_nsrdb/2024/{plant}.csv")
